@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Night Stand">
+<title>Night Stand</title>
+<style>
+:root {
+  --bg:#08090d;
+  --panel:#13151c;
+  --text:#f5f5f7;
+  --muted:#858995;
+  --accent:#f2a65a;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; min-height:100vh;
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  transition:background .3s,color .3s;
+}
+button,input { font:inherit; }
+button { cursor:pointer; }
+.app {
+  width:min(100%,760px); min-height:100vh; margin:auto;
+  padding:env(safe-area-inset-top) 22px env(safe-area-inset-bottom);
+  display:flex; flex-direction:column;
+}
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:24px 0 18px;
+}
+.brand { font-size:13px; letter-spacing:4px; font-weight:700; }
+.subbrand { color:var(--muted); font-size:10px; letter-spacing:2px; margin-top:5px; }
+.iconbtn {
+  width:44px; height:44px; border:1px solid #30323a;
+  border-radius:50%; color:var(--text); background:var(--panel);
+  font-size:20px;
+}
+.main {
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; padding:28px 0 40px;
+}
+.eyebrow {
+  color:var(--accent); font-size:11px; letter-spacing:3px;
+  text-transform:uppercase; margin-bottom:18px;
+}
+.clock {
+  font-size:clamp(64px,15vw,124px);
+  line-height:1; font-weight:300; letter-spacing:-5px;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.clock .seconds { font-size:.39em; letter-spacing:-1px; color:var(--accent); }
+.ampm { font-size:14px; letter-spacing:2px; color:var(--muted); margin-left:8px; }
+.date { font-size:15px; color:#b0b3bc; margin-top:22px; letter-spacing:1px; }
+.line { height:1px; background:#282a32; margin:34px 0 24px; }
+.cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.card {
+  background:var(--panel); border:1px solid #252731;
+  border-radius:18px; padding:18px; min-width:0;
+}
+.card-label { font-size:10px; color:var(--muted); letter-spacing:2px; margin-bottom:13px; }
+.card-value { font-size:19px; font-weight:500; overflow-wrap:anywhere; }
+.card-note { font-size:11px; color:var(--muted); margin-top:7px; line-height:1.6; }
+.weather-icon { font-size:26px; margin-bottom:8px; }
+.bottom { color:#626672; font-size:10px; text-align:center; padding:20px 0 22px; letter-spacing:1px; }
+.hidden { display:none !important; }
+.overlay {
+  position:fixed; inset:0; background:#0009; z-index:10;
+  display:flex; justify-content:center; align-items:flex-end;
+  padding:12px;
+}
+.sheet {
+  width:min(100%,560px); max-height:88dvh; overflow:auto;
+  background:#15171f; border:1px solid #30323b; border-radius:24px;
+  padding:24px; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+.sheethead { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.sheet h2 { font-size:20px; margin:0; }
+.section-title { color:var(--muted); font-size:10px; letter-spacing:2px; margin:24px 0 12px; }
+.setting-row {
+  display:flex; justify-content:space-between; align-items:center;
+  gap:12px; padding:14px 0; border-bottom:1px solid #292b34;
+}
+.setting-name { font-size:14px; }
+.setting-desc { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.5; }
+input[type="checkbox"] { width:21px; height:21px; accent-color:var(--accent); flex-shrink:0; }
+select, input[type="text"] {
+  background:#22252e; border:1px solid #393c47; border-radius:10px;
+  color:white; padding:11px; max-width:155px; min-width:0;
+}
+.colors { display:flex; gap:12px; flex-wrap:wrap; }
+.swatch {
+  width:34px; height:34px; border-radius:50%; border:3px solid transparent;
+  outline:1px solid #555; outline-offset:2px;
+}
+.swatch.selected { outline:2px solid white; }
+.action {
+  background:var(--accent); color:#17100a; border:0; border-radius:12px;
+  padding:12px 16px; font-weight:700;
+}
+.secondary {
+  background:#292c36; color:white; border:1px solid #3a3d47;
+  border-radius:12px; padding:12px 16px;
+}
+.note { color:var(--muted); font-size:11px; line-height:1.7; }
+.weather-error { color:#ffbd91; font-size:11px; line-height:1.5; margin-top:8px; }
+body.dim { --bg:#030405; --panel:#090a0d; --text:#8c8e94; --muted:#5c5e64; --accent:#b47d4a; }
+@media(max-width:380px) {
+  .app { padding-left:16px; padding-right:16px; }
+  .clock { letter-spacing:-4px; }
+  .card { padding:14px; }
+  .card-value { font-size:17px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="brand">NIGHT STAND</div>
+      <div class="subbrand">YOUR NIGHT, YOUR SPACE</div>
+    </div>
+    <button class="iconbtn" id="openSettings" aria-label="設定">⚙</button>
+  </header>
+
+  <main class="main">
+    <div class="eyebrow" id="greeting">A MOMENT FOR YOURSELF</div>
+    <div class="clock" id="clock" aria-label="現在時刻">00:00</div>
+    <div class="date" id="date"></div>
+    <div class="line"></div>
+
+    <div class="cards">
+      <section class="card" id="weatherCard">
+        <div class="card-label">WEATHER / 天気</div>
+        <div class="weather-icon" id="weatherIcon">☁</div>
+        <div class="card-value" id="weatherValue">都市を設定</div>
+        <div class="card-note" id="weatherNote">設定から都市名を入力してね</div>
+        <div class="weather-error hidden" id="weatherError"></div>
+      </section>
+      <section class="card" id="musicCard">
+        <div class="card-label">NOW PLAYING / 音楽</div>
+        <div class="weather-icon">♫</div>
+        <div class="card-value">Music</div>
+        <div class="card-note">Safariから他の音楽アプリの曲情報は取得できません</div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="bottom">SLOW DOWN · BREATHE · REST</footer>
+</div>
+
+<div class="overlay hidden" id="settingsOverlay">
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheethead">
+      <h2 id="settingsTitle">設定</h2>
+      <button class="iconbtn" id="closeSettings" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="section-title">CLOCK / 時計</div>
+    <div class="setting-row">
+      <div><div class="setting-name">24時間表示</div><div class="setting-desc">オンで23:59、オフで11:59 PM</div></div>
+      <input type="checkbox" id="format24" checked>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">秒数を表示</div></div>
+      <input type="checkbox" id="showSeconds" checked>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">日付を表示</div></div>
+      <input type="checkbox" id="showDate" checked>
+    </div>
+
+    <div class="section-title">DISPLAY / 表示</div>
+    <div class="setting-row">
+      <div><div class="setting-name">天気カード</div></div>
+      <input type="checkbox" id="showWeather" checked>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">音楽カード</div><div class="setting-desc">曲情報の自動取得は非対応</div></div>
+      <input type="checkbox" id="showMusic" checked>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">夜間モード</div><div class="setting-desc">画面全体を暗くする</div></div>
+      <input type="checkbox" id="dimMode">
+    </div>
+
+    <div class="section-title">ACCENT COLOR / 文字色</div>
+    <div class="colors" id="colorChoices">
+      <button class="swatch selected" data-color="#f2a65a" style="background:#f2a65a" aria-label="オレンジ"></button>
+      <button class="swatch" data-color="#8db9ff" style="background:#8db9ff" aria-label="ブルー"></button>
+      <button class="swatch" data-color="#a8e6cf" style="background:#a8e6cf" aria-label="ミント"></button>
+      <button class="swatch" data-color="#e5a6ff" style="background:#e5a6ff" aria-label="パープル"></button>
+      <button class="swatch" data-color="#ff8e9e" style="background:#ff8e9e" aria-label="ピンク"></button>
+      <button class="swatch" data-color="#f5f5f7" style="background:#f5f5f7" aria-label="ホワイト"></button>
+    </div>
+
+    <div class="section-title">WEATHER / 天気</div>
+    <div class="setting-row">
+      <div><div class="setting-name">都市名</div><div class="setting-desc">例：Gifu、Tokyo、Osaka</div></div>
+      <input type="text" id="cityInput" placeholder="Gifu" maxlength="60" aria-label="都市名">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="action" id="saveCity">天気を取得</button>
+      <button class="secondary" id="resetSettings">初期設定に戻す</button>
+    </div>
+    <p class="note" style="margin-top:20px">設定はこのブラウザに保存されます。天気の取得にはインターネット接続が必要です。バッテリー残量や別アプリの再生情報は、iPhoneのSafariでは取得できない場合があります。</p>
+  </section>
+</div>
+
+<script>
+const defaults = {
+  format24:true, showSeconds:true, showDate:true,
+  showWeather:true, showMusic:true, dimMode:false,
+  color:"#f2a65a", city:""
+};
+let settings = {...defaults};
+
+try {
+  const saved = JSON.parse(localStorage.getItem("nightStandSettings") || "{}");
+  settings = {...defaults, ...saved};
+} catch(e) {}
+
+const $ = id => document.getElementById(id);
+
+function saveSettings() {
+  try { localStorage.setItem("nightStandSettings", JSON.stringify(settings)); }
+  catch(e) {}
+}
+
+function applySettings() {
+  document.documentElement.style.setProperty("--accent", settings.color);
+  document.body.classList.toggle("dim", settings.dimMode);
+  $("weatherCard").classList.toggle("hidden", !settings.showWeather);
+  $("musicCard").classList.toggle("hidden", !settings.showMusic);
+  $("date").classList.toggle("hidden", !settings.showDate);
+
+  ["format24","showSeconds","showDate","showWeather","showMusic","dimMode"]
+    .forEach(id => $(id).checked = !!settings[id]);
+
+  $("cityInput").value = settings.city || "";
+  document.querySelectorAll(".swatch").forEach(b =>
+    b.classList.toggle("selected", b.dataset.color === settings.color)
+  );
+  renderClock();
+}
+
+function renderClock() {
+  const now = new Date();
+  let h = now.getHours();
+  let ampm = "";
+  if (!settings.format24) {
+    ampm = h >= 12 ? " PM" : " AM";
+    h = h % 12 || 12;
+  }
+  const hh = String(h).padStart(2,"0");
+  const mm = String(now.getMinutes()).padStart(2,"0");
+  const ss = String(now.getSeconds()).padStart(2,"0");
+  $("clock").innerHTML = `${hh}:${mm}${settings.showSeconds
+    ? `<span class="seconds">:${ss}</span>` : ""}${ampm
+    ? `<span class="ampm">${ampm}</span>` : ""}`;
+
+  $("date").textContent = new Intl.DateTimeFormat("ja-JP", {
+    year:"numeric", month:"long", day:"numeric", weekday:"long"
+  }).format(now);
+
+  const hour = now.getHours();
+  $("greeting").textContent =
+    hour < 5 ? "LATE NIGHT / 静かな時間" :
+    hour < 11 ? "GOOD MORNING / おはよう" :
+    hour < 17 ? "TAKE A BREATH / ひと休み" :
+    hour < 21 ? "GOOD EVENING / こんばんは" :
+    "WIND DOWN / ゆっくり休もう";
+}
+setInterval(renderClock, 250);
+renderClock();
+
+$("openSettings").addEventListener("click", () => {
+  $("settingsOverlay").classList.remove("hidden");
+});
+$("closeSettings").addEventListener("click", () => {
+  $("settingsOverlay").classList.add("hidden");
+});
+$("settingsOverlay").addEventListener("click", e => {
+  if (e.target === $("settingsOverlay"))
+    $("settingsOverlay").classList.add("hidden");
+});
+
+["format24","showSeconds","showDate","showWeather","showMusic","dimMode"]
+.forEach(id => $(id).addEventListener("change", e => {
+  settings[id] = e.target.checked;
+  saveSettings();
+  applySettings();
+}));
+
+$("colorChoices").addEventListener("click", e => {
+  const btn = e.target.closest("[data-color]");
+  if (!btn) return;
+  settings.color = btn.dataset.color;
+  saveSettings();
+  applySettings();
+});
+
+async function loadWeather() {
+  const city = settings.city.trim();
+  $("weatherError").classList.add("hidden");
+
+  if (!city) {
+    $("weatherIcon").textContent = "☁";
+    $("weatherValue").textContent = "都市を設定";
+    $("weatherNote").textContent = "設定から都市名を入力してね";
+    return;
+  }
+
+  $("weatherValue").textContent = "取得中…";
+  $("weatherNote").textContent = city;
+
+  try {
+    const geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+      encodeURIComponent(city) + "&count=1&language=ja&format=json";
+    const geoResponse = await fetch(geoUrl);
+    if (!geoResponse.ok) throw new Error("都市情報を取得できません");
+    const geo = await geoResponse.json();
+    if (!geo.results || !geo.results.length) throw new Error("都市が見つかりません。英語名も試してね");
+
+    const place = geo.results[0];
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
+    const weatherResponse = await fetch(weatherUrl);
+    if (!weatherResponse.ok) throw new Error("天気情報を取得できません");
+    const data = await weatherResponse.json();
+    const current = data.current;
+    const code = current.weather_code;
+    let icon = "☁", description = "くもり";
+
+    if (code === 0) { icon = "☀"; description = "快晴"; }
+    else if ([1,2].includes(code)) { icon = "🌤"; description = "晴れ"; }
+    else if (code === 3) { icon = "☁"; description = "くもり"; }
+    else if ([45,48].includes(code)) { icon = "🌫"; description = "霧"; }
+    else if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) { icon = "🌧"; description = "雨"; }
+    else if ([71,73,75,77,85,86].includes(code)) { icon = "❄"; description = "雪"; }
+    else if ([95,96,99].includes(code)) { icon = "⛈"; description = "雷雨"; }
+
+    $("weatherIcon").textContent = icon;
+    $("weatherValue").textContent = `${Math.round(current.temperature_2m)}°C`;
+    $("weatherNote").textContent = `${place.name} · ${description} · 体感 ${Math.round(current.apparent_temperature)}°C`;
+  } catch(error) {
+    $("weatherValue").textContent = "取得できません";
+    $("weatherNote").textContent = city;
+    $("weatherError").textContent = error.message || "接続を確認してもう一度試してね";
+    $("weatherError").classList.remove("hidden");
+  }
+}
+
+$("saveCity").addEventListener("click", async () => {
+  settings.city = $("cityInput").value.trim();
+  saveSettings();
+  await loadWeather();
+});
+$("cityInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") $("saveCity").click();
+});
+$("resetSettings").addEventListener("click", () => {
+  settings = {...defaults};
+  saveSettings();
+  applySettings();
+  loadWeather();
+});
+
+applySettings();
+if (settings.city) loadWeather();
+</script>
+</body>
+</html>
